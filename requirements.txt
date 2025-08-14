@@ -1,0 +1,26 @@
+# Core CLI framework
+cmd2>=2.4.0
+
+# HTTP requests
+requests>=2.28.0
+
+# Data processing
+pandas>=1.5.0
+
+# Markdown processing
+markdown>=3.4.0
+
+# PDF generation (primary)
+weasyprint>=59.0
+
+# Code highlighting
+pygments>=2.13.0
+
+# PDF generation (alternative)
+pdfkit>=1.0.0
+
+# Date/time utilities
+python-dateutil>=2.8.0
+
+# File path utilities
+pathlib2>=2.3.0;python_version<"3.4"
