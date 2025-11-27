@@ -181,10 +181,9 @@ Thumbs.db
 config.py
 *.csv
 *.pdf
-*.md
-!README.md
-!CLAUDE.md
-!*.example.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
 
 # Generated sample files
 sample_*.md

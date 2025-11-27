@@ -126,6 +126,7 @@ The CSV file for uploading grades should have these columns:
 | `pdf_file` | No | Path to PDF feedback file |
 
 Example CSV:
+
 ```csv
 student_id,grade,comment,markdown_file
 12345,85,Great work!,feedback/student_12345.md
