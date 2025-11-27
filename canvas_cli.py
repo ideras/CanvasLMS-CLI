@@ -6,14 +6,14 @@ from config import CANVAS_CONFIG
 
 class CanvasCLI(Cmd):
     """Interactive Canvas CLI management"""
-    
+
     intro = """
 🎓 Canvas LMS - Command Line Interface
 ==========================================
 Connected to: """ + CANVAS_CONFIG['base_url'] + """
 
 Type 'help' for available commands
-Type 'ls courses' to see your courses  
+Type 'ls courses' to see your courses
 Type 'ls folders <course_id>' to see the folders in a course
 Type 'use course <course_id>' to select a course
 Type 'exit' to quit
@@ -93,6 +93,9 @@ Pro tip: Use TAB for auto-completion!
     show_subparsers.add_parser("assignments", help="Show assignments in current course")
     show_subparsers.add_parser("students", help="Show students in current course")
 
+    sp_show_assignment = show_subparsers.add_parser("assignment", help="Show details for a specific assignment")
+    sp_show_assignment.add_argument("assignment_id", help="Assignment ID to show details for")
+
     @with_argparser(show_parser)
     def do_show(self, args: argparse.Namespace):
         """Show assignments or students of the current course."""
@@ -101,6 +104,12 @@ Pro tip: Use TAB for auto-completion!
             self.canvas_cli_cmd_hdlr.list_assignments();
         elif args.entity == "students":
             self.canvas_cli_cmd_hdlr.list_students();
+        elif args.entity == "assignment":
+            try:
+                assignment_id = int(args.assignment_id)
+                self.canvas_cli_cmd_hdlr.show_assignment_details(assignment_id)
+            except Exception as e:
+                self.perror(f"Invalid assignment id {args.assignment_id}. It must be a number")
 
     # ---------------------------
     # download command with subcommands (nested)
@@ -146,6 +155,11 @@ Pro tip: Use TAB for auto-completion!
     sp_ul_assignment_grades = ul_assign_sub.add_parser("grades", help="Upload grades for an assignment")
     sp_ul_assignment_grades.add_argument("assignment_id", help="Assignment ID")
     sp_ul_assignment_grades.add_argument("--file", "-f", required=True, help="Input CSV file")
+    sp_ul_assignment_grades.add_argument(
+        "--root-dir", "-r",
+        required=False,
+        help="Root directory to resolve relative file paths in the CSV (defaults to the CSV file's parent directory)"
+    )
 
     @with_argparser(upload_parser)
     def do_upload(self, args: argparse.Namespace):
@@ -153,9 +167,47 @@ Pro tip: Use TAB for auto-completion!
         if args.entity == "assignment" and args.what == "grades":
             try:
                 assignment_id = int(args.assignment_id)
-                self.canvas_cli_cmd_hdlr.upload_assignment_grades_csv(assignment_id, args.file)
+                self.canvas_cli_cmd_hdlr.upload_assignment_grades_csv(assignment_id, args.file, args.root_dir)
             except Exception as e:
                 self.perror(f"Invalid assigment id {args.assignment_id}. It must be a number")
+
+    # ---------------------------
+    # create command with subcommands
+    # ---------------------------
+    create_parser = Cmd2ArgumentParser(prog="create", description="Create Canvas resources")
+    create_subparsers = create_parser.add_subparsers(dest="entity", required=True)
+
+    sp_create_assignment = create_subparsers.add_parser("assignment", help="Create a new assignment")
+    sp_create_assignment.add_argument("name", help="Assignment name")
+    sp_create_assignment.add_argument("--points", "-p", type=float, help="Points possible")
+    sp_create_assignment.add_argument("--due-date", "-d", help="Due date (ISO format: YYYY-MM-DDTHH:MM:SSZ, e.g., 2024-12-31T23:59:59Z)")
+    sp_create_assignment.add_argument("--description", "--desc", help="Assignment description")
+    sp_create_assignment.add_argument("--published", action="store_true", help="Publish immediately")
+
+    @with_argparser(create_parser)
+    def do_create(self, args: argparse.Namespace):
+        """Create assignments or other resources."""
+        if args.entity == "assignment":
+            self.canvas_cli_cmd_hdlr.create_assignment(args)
+
+    # ---------------------------
+    # delete command with subcommands
+    # ---------------------------
+    delete_parser = Cmd2ArgumentParser(prog="delete", description="Delete Canvas resources")
+    delete_subparsers = delete_parser.add_subparsers(dest="entity", required=True)
+
+    sp_delete_assignment = delete_subparsers.add_parser("assignment", help="Delete an assignment")
+    sp_delete_assignment.add_argument("assignment_id", help="Assignment ID to delete")
+
+    @with_argparser(delete_parser)
+    def do_delete(self, args: argparse.Namespace):
+        """Delete assignments or other resources."""
+        if args.entity == "assignment":
+            try:
+                assignment_id = int(args.assignment_id)
+                self.canvas_cli_cmd_hdlr.delete_assignment(assignment_id)
+            except Exception as e:
+                self.perror(f"Invalid assignment id {args.assignment_id}. It must be a number")
 
     # ---------------------------
     # exit / quit

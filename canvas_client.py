@@ -34,7 +34,7 @@ class CanvasClient:
         """List assignments for a course"""
 
         try:
-            assignments = self.canvas_re.make_request(f'/courses/{course_id}/assignments?per_page=100')
+            assignments = self.canvas_re.make_request(f'/courses/{course_id}/assignments?per_page=100&include[]=assignment_group')
             return assignments
         except Exception as e:
             raise RuntimeError(f"Failed to get assignments for course {course_id}: {e}") from e
@@ -164,6 +164,16 @@ class CanvasClient:
         endpoint = f'/progress/{progress_id}'
         
         return self.canvas_re.make_request(endpoint)
+    
+    def create_assignment(self, course_id: int, assignment_data: dict) -> dict:
+        """Create a new assignment in a course"""
+        endpoint = f'/courses/{course_id}/assignments'
+        return self.canvas_re.make_request(endpoint, method='POST', data=assignment_data)
+    
+    def delete_assignment(self, course_id: int, assignment_id: int) -> dict:
+        """Delete an assignment from a course"""
+        endpoint = f'/courses/{course_id}/assignments/{assignment_id}'
+        return self.canvas_re.make_request(endpoint, method='DELETE')
     
     def _get_content_type(self, file_ext: str) -> str:
         """Get MIME type for file extension"""
