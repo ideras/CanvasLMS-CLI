@@ -929,3 +929,146 @@ class CanvasCLICommandHandler:
 
         except Exception as e:
             self.cli.poutput(f"Failed to download quiz submissions: {e}")
+
+    def download_assignment_submissions(self, assignment_id: int, output_dir: Optional[str]) -> None:
+        """Download assignment submissions with file attachments"""
+
+        course = self.require_course()
+        if not course:
+            return
+
+        course_id = course['id']
+
+        try:
+            # Validate assignment exists
+            all_assignments = self.canvas_client.get_assignments_for_course(course_id)
+            assignment = next((a for a in all_assignments if a['id'] == assignment_id), None)
+
+            if not assignment:
+                self.cli.poutput(f"Cannot find assignment with ID: {assignment_id} in course '{course['name']}'")
+                return
+
+            self.cli.poutput(f"\nAssignment Submission Download Summary:")
+            self.cli.poutput(f"   Course: {course['name']}")
+            self.cli.poutput(f"   Assignment: {assignment['name']}")
+
+            # Get submissions with attachments
+            submissions = self.canvas_client.get_assignment_submissions_with_attachments(course_id, assignment_id)
+            students = self.canvas_client.get_students_for_course(course_id)
+            student_map = {student['id']: student for student in students}
+
+            if not submissions:
+                self.cli.poutput("No submissions found for this assignment.")
+                return
+
+            # Create output directory
+            if not output_dir:
+                safe_assignment_name = "".join(c for c in assignment['name'] if c.isalnum() or c in (' ', '-', '_')).strip()
+                output_dir = f"assignment_{assignment_id}_{safe_assignment_name.replace(' ', '_')}_submissions"
+
+            import os
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Prepare summary data
+            summary_data = []
+            total_files_downloaded = 0
+            submissions_with_files = 0
+
+            self.cli.poutput(f"\nProcessing {len(submissions)} submissions...")
+
+            for i, submission in enumerate(submissions, 1):
+                user_id = submission.get('user_id')
+                student = student_map.get(user_id, {'name': f'Unknown ({user_id})', 'email': 'N/A'})
+
+                # Create student directory
+                safe_student_name = "".join(c for c in student.get('name', f'user_{user_id}') if c.isalnum() or c in (' ', '-', '_')).strip()
+                student_dir = os.path.join(output_dir, f"{safe_student_name}_{user_id}")
+                os.makedirs(student_dir, exist_ok=True)
+
+                # Get attachments from submission
+                attachments = []
+
+                # Check current submission for attachments
+                if 'attachments' in submission and submission['attachments']:
+                    attachments.extend(submission['attachments'])
+
+                # Check submission history for attachments
+                if 'submission_history' in submission and submission['submission_history']:
+                    for history_item in submission['submission_history']:
+                        if 'attachments' in history_item and history_item['attachments']:
+                            attachments.extend(history_item['attachments'])
+
+                # Remove duplicate attachments based on ID
+                seen_ids = set()
+                unique_attachments = []
+                for att in attachments:
+                    if att.get('id') and att['id'] not in seen_ids:
+                        seen_ids.add(att['id'])
+                        unique_attachments.append(att)
+
+                # Download attachments
+                files_downloaded = 0
+                attachment_info = []
+
+                for att in unique_attachments:
+                    file_name = att.get('display_name', att.get('filename', f"file_{att.get('id', 'unknown')}"))
+                    file_url = att.get('url', '')
+
+                    if file_url:
+                        # Sanitize filename
+                        safe_filename = "".join(c for c in file_name if c.isalnum() or c in ('.', '-', '_', ' ')).strip()
+                        if not safe_filename:
+                            safe_filename = f"file_{att.get('id', 'unknown')}"
+
+                        local_path = os.path.join(student_dir, safe_filename)
+
+                        # Download the file
+                        self.cli.poutput(f"  Downloading: {student.get('name', f'User {user_id}')} - {file_name}")
+
+                        if self.canvas_client.download_file_from_url(file_url, local_path):
+                            files_downloaded += 1
+                            attachment_info.append({
+                                'filename': file_name,
+                                'size': att.get('size', 0),
+                                'content_type': att.get('content-type', 'unknown')
+                            })
+                        else:
+                            self.cli.poutput(f"    Failed to download: {file_name}")
+
+                if files_downloaded > 0:
+                    submissions_with_files += 1
+                    total_files_downloaded += files_downloaded
+
+                # Add to summary data
+                summary_data.append({
+                    'student_name': student.get('name', ''),
+                    'student_email': student.get('email', ''),
+                    'student_id': user_id,
+                    'submitted_at': submission.get('submitted_at', ''),
+                    'workflow_state': submission.get('workflow_state', ''),
+                    'files_count': files_downloaded,
+                    'files_list': '; '.join([info['filename'] for info in attachment_info])
+                })
+
+                # Show progress
+                if i % 10 == 0:
+                    self.cli.poutput(f"  Processed {i}/{len(submissions)} submissions...")
+
+            # Create summary CSV
+            summary_file = os.path.join(output_dir, 'submission_summary.csv')
+            with open(summary_file, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = ['student_name', 'student_email', 'student_id', 'submitted_at', 'workflow_state', 'files_count', 'files_list']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(summary_data)
+
+            # Final summary
+            self.cli.poutput(f"\n✅ Download Complete!")
+            self.cli.poutput(f"   Output directory: {output_dir}")
+            self.cli.poutput(f"   Total submissions: {len(submissions)}")
+            self.cli.poutput(f"   Submissions with files: {submissions_with_files}")
+            self.cli.poutput(f"   Total files downloaded: {total_files_downloaded}")
+            self.cli.poutput(f"   Summary CSV: {summary_file}")
+
+        except Exception as e:
+            self.cli.poutput(f"Failed to download assignment submissions: {e}")

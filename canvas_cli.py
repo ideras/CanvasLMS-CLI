@@ -206,6 +206,10 @@ class CanvasCLI(Cmd):
     sp_dl_assignment_grades.add_argument("assignment_id", help="Assignment ID")
     sp_dl_assignment_grades.add_argument("--file", "-f", required=False, help="Output CSV file (default name is based on the course and assignment name)")
 
+    sp_dl_assignment_submissions = dl_assign_sub.add_parser("submissions", help="Download assignment submissions with file attachments")
+    sp_dl_assignment_submissions.add_argument("assignment_id", help="Assignment ID")
+    sp_dl_assignment_submissions.add_argument("--dir", "-d", required=False, help="Output directory (default: current directory)")
+
     sp_dl_quiz = dl_subparsers.add_parser("quiz", help="Download quiz-related data")
     dl_quiz_sub = sp_dl_quiz.add_subparsers(dest="what", required=True)
     sp_dl_quiz_questions = dl_quiz_sub.add_parser("questions", help="Download quiz questions as JSON or Markdown")
@@ -227,6 +231,12 @@ class CanvasCLI(Cmd):
             try:
                 assignment_id = int(args.assignment_id)
                 self.canvas_cli_cmd_hdlr.download_assignment_grades_csv(assignment_id, args.file)
+            except Exception as e:
+                self.perror(f"Invalid assigment id {args.assignment_id}. It must be a number")
+        elif args.entity == "assignment" and args.what == "submissions":
+            try:
+                assignment_id = int(args.assignment_id)
+                self.canvas_cli_cmd_hdlr.download_assignment_submissions(assignment_id, args.dir)
             except Exception as e:
                 self.perror(f"Invalid assigment id {args.assignment_id}. It must be a number")
         elif args.entity == "quiz" and args.what == "questions":
