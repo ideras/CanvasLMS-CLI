@@ -23,28 +23,32 @@ A powerful command-line interface for managing Canvas LMS courses, students, ass
 ## 🚀 Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/CanvasLMS-CLI.git
-cd CanvasLMS-CLI
-```
+   
+   ```bash
+   git clone https://github.com/ideras/CanvasLMS-CLI.git
+   cd CanvasLMS-CLI
+   ```
 
 2. Install dependencies:
 
 **Option A: Using uv (recommended):**
+
 ```bash
 uv sync
 ```
 
 **Option B: Using pip:**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Configure your Canvas settings:
-```bash
-cp config.example.py config.py
-# Edit config.py with your Canvas URL and API token
-```
+   
+   ```bash
+   cp config.example.py config.py
+   # Edit config.py with your Canvas URL and API token
+   ```
 
 ## ⚙️ Configuration
 
@@ -77,6 +81,7 @@ python3 canvas_cli.py
 ### Basic Commands
 
 #### List and Select Courses
+
 ```bash
 # List all your courses
 canvas> ls courses
@@ -89,6 +94,7 @@ canvas> use course 12345
 ```
 
 #### Manage Students
+
 ```bash
 # Show students in current course
 canvas/programming_course> show students
@@ -98,6 +104,7 @@ canvas/programming_course> download students --file students.csv
 ```
 
 #### Manage Assignments
+
 ```bash
 # Show assignments in current course
 canvas/programming_course> show assignments
@@ -107,6 +114,7 @@ canvas/programming_course> download assignment grades 67890 --file grades.csv
 ```
 
 #### Upload Grades
+
 ```bash
 # Upload grades from CSV file
 canvas/programming_course> upload assignment grades 67890 --file updated_grades.csv
@@ -115,15 +123,16 @@ canvas/programming_course> upload assignment grades 67890 --file updated_grades.
 ### CSV File Formats
 
 #### Grade Upload CSV Format
+
 The CSV file for uploading grades should have these columns:
 
-| Column | Required | Description |
-|--------|----------|-------------|
-| `student_id` | Yes | Canvas student ID |
-| `grade` | Yes | Numeric grade |
-| `comment` | No | Text comment for the grade |
-| `markdown_file` | No | Path to Markdown feedback file |
-| `pdf_file` | No | Path to PDF feedback file |
+| Column          | Required | Description                    |
+| --------------- | -------- | ------------------------------ |
+| `student_id`    | Yes      | Canvas student ID              |
+| `grade`         | Yes      | Numeric grade                  |
+| `comment`       | No       | Text comment for the grade     |
+| `markdown_file` | No       | Path to Markdown feedback file |
+| `pdf_file`      | No       | Path to PDF feedback file      |
 
 Example CSV:
 
@@ -134,6 +143,7 @@ student_id,grade,comment,markdown_file
 ```
 
 #### Features of Grade Upload
+
 - **Automatic PDF Conversion**: Markdown files are automatically converted to PDF
 - **File Organization**: Files are uploaded to organized Canvas folders
 - **Rich Comments**: HTML comments with download links are added automatically
@@ -157,6 +167,7 @@ The tool automatically converts Markdown feedback files to PDF with professional
 ### File Upload System
 
 Files are automatically organized in Canvas under:
+
 ```
 Grade_Feedback/
 ├── 2024-08-14_Assignment_1/

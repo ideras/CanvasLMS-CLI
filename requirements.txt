@@ -23,5 +23,7 @@ pdfkit>=1.0.0
 python-dateutil>=2.8.0
 
 # File path utilities
-pathlib2>=2.3.0;python_version<"3.4"# HTML to Markdown conversion
+pathlib2>=2.3.0;python_version<"3.4"
+
+# HTML to Markdown conversion
 markdownify>=0.11.0
