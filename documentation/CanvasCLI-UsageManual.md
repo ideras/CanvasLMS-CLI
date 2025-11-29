@@ -1,7 +1,8 @@
 # Canvas CLI Usage Manual
 
 ## Overview
-Canvas CLI is a command-line interface for managing Canvas LMS courses, assignments, and grades. It allows you to interact with your Canvas instance directly from the terminal.
+
+Canvas CLI is a command-line interface for managing Canvas LMS courses, assignments, quizzes, and grades. It allows you to interact with your Canvas instance directly from the terminal.
 
 ## Getting Started
 
@@ -72,6 +73,7 @@ uv run canvas_cli.py
 ### Course Management
 
 #### List Courses
+
 ```
 ls courses [options]
 ```
@@ -85,16 +87,15 @@ ls courses [options]
 
 **Examples:**
 
-```
+```bash
 ls courses
 ls courses --name "COMPILADORES"
-ls courses --name "2025Q1" -i
-ls courses --code "15" -i
+ls courses --code "2025Q1" -i
 ```
 
 #### Select Course
 
-```
+```bash
 use course <course_id>
 ```
 
@@ -102,13 +103,13 @@ Switch to a specific course context. The prompt will update to show the current 
 
 **Example:**
 
-```
+```bash
 use course 81944
 ```
 
 #### List Folders
 
-```
+```bash
 ls folders [course_id]
 ```
 
@@ -116,7 +117,7 @@ List all folders in a course. If no course_id is provided, uses the currently se
 
 **Example:**
 
-```
+```bash
 ls folders 81944
 ```
 
@@ -124,7 +125,7 @@ ls folders 81944
 
 #### List Assignments
 
-```
+```bash
 show assignments
 ```
 
@@ -132,14 +133,14 @@ Show all assignments in the currently selected course. Displays: name, due date,
 
 **Example:**
 
-```
+```bash
 use course 81944
 show assignments
 ```
 
 #### Show Assignment Details
 
-```
+```bash
 show assignment <assignment_id>
 ```
 
@@ -202,6 +203,125 @@ Delete an assignment from the currently selected course.
 delete assignment 1514425
 ```
 
+### Quiz Management
+
+#### List Quizzes
+
+```bash
+show quizzes
+```
+
+Show all quizzes in the currently selected course. Displays: title, due date, points, questions, published status, assignment group, and ID.
+
+**Example:**
+
+```bash
+use course 81944
+show quizzes
+```
+
+#### Show Quiz Details
+
+```bash
+show quiz <quiz_id>
+```
+
+Display detailed information about a specific quiz.
+
+**Information shown:**
+
+- Title and ID
+- Description (if any)
+- Quiz type and assignment group
+- Points and question count
+- Time limit
+- Due/lock/unlock dates
+- Allowed attempts
+- Quiz settings (shuffle answers, show correct answers, one question at a time, can't go back)
+- Access code (if set)
+- Scoring policy and hide results
+- Published status
+- Lock status and reason
+- Direct URL
+
+**Example:**
+
+```bash
+show quiz 251627
+```
+
+#### Download Quiz Questions
+
+```bash
+download quiz questions <quiz_id> [--file FILE] [--markdown]
+```
+
+Download quiz questions to a file. Supports both JSON and Markdown formats.
+
+**Options:**
+
+- `--file, -f <path>`: Output file (default name is based on quiz title)
+- `--markdown, -m`: Export as Markdown instead of JSON
+
+**JSON format:** Contains quiz metadata and full question data including answers, feedback, and settings.
+
+**Markdown format:** Human-readable format with:
+
+- Quiz details section
+- Description (converted from HTML)
+- Questions with types, points, and text
+- Answer options for multiple choice questions
+- Feedback sections
+
+**Examples:**
+
+```bash
+# Download as JSON
+download quiz questions 251627
+
+# Download as Markdown
+download quiz questions 251627 --markdown
+
+# Custom filename
+download quiz questions 251627 -f my_quiz.md --markdown
+```
+
+#### Download Quiz Submissions
+
+```bash
+download quiz submissions <quiz_id> [--file DIR] [--markdown]
+```
+
+Download all student submissions for a quiz. Each submission is saved as a separate file.
+
+**Options:**
+
+- `--file, -f <path>`: Output directory (default: auto-generated based on quiz title)
+- `--markdown, -m`: Export as Markdown instead of JSON
+
+**JSON format:** Contains submission metadata, student info, and answer data.
+
+**Markdown format:** Human-readable format with:
+
+- Student information section
+- Submission details (timestamps, score, status)
+- Student answers with full text content
+- Points awarded per question
+- Correctness status
+
+**Examples:**
+
+```bash
+# Download as JSON files
+download quiz submissions 251627
+
+# Download as Markdown files
+download quiz submissions 251627 --markdown
+
+# Custom directory
+download quiz submissions 251627 -f ./submissions --markdown
+```
+
 ### Student Management
 
 #### List Students
@@ -228,7 +348,7 @@ Export the student list to a CSV file. If no filename is provided, generates one
 
 **CSV format:** `canvas_id`, `name`, `email`, `sis_user_id`
 
-**Example:**
+**Examples:**
 
 ```bash
 download students
@@ -247,7 +367,7 @@ Download grades for a specific assignment as CSV. If no filename is provided, ge
 
 **CSV format:** `canvas_id`, `name`, `email`, `grade`, `submitted_at`, `workflow_state`, `late`
 
-**Example:**
+**Examples:**
 
 ```bash
 download assignment grades 1514425
@@ -269,7 +389,7 @@ Upload grades from a CSV file to a specific assignment.
 - `--file, -f <path>`: Path to the CSV file (required)
 - `--root-dir, -r <path>`: Root directory to resolve relative file paths in the CSV (defaults to CSV file's parent directory)
 
-**Example:**
+**Examples:**
 
 ```bash
 upload assignment grades 1514425 --file grades.csv
@@ -308,7 +428,23 @@ show students
 download students
 ```
 
-### Example 2: Working with assignment grades
+### Example 2: Working with quizzes
+
+```bash
+# Select course
+use course 81944
+
+# Show quiz details
+show quiz 251627
+
+# Download quiz questions as markdown
+download quiz questions 251627 --markdown
+
+# Download student submissions
+download quiz submissions 251627 --markdown
+```
+
+### Example 3: Working with assignment grades
 
 ```bash
 # Select course
@@ -324,7 +460,7 @@ download assignment grades 1514425 --file current_grades.csv
 upload assignment grades 1514425 --file updated_grades.csv
 ```
 
-### Example 3: Creating and managing assignments
+### Example 4: Creating and managing assignments
 
 ```bash
 # Select course
@@ -364,7 +500,7 @@ The CSV file for uploading grades should have these columns:
 - `pdf_exam_file1` and `pdf_exam_file2` can be used when applying handwritten exams. `pdf_exam_file1` can be the scanned student submission and `pdf_exam_file2` can be the transcription, usually created with AI help.
 - When using Markdown files the system will convert then to PDF before submitting in to **Canvas LMS**.
 
-Example CSV:
+**Example CSV:**
 
 ```csv
 student_id,grade,comment,md_eval_file
@@ -388,6 +524,7 @@ The CLI provides clear error messages for common issues:
 - "Course not found" - Check the course ID with `ls courses`
 - "Assignment not found" - Verify the assignment ID with `show assignments`
 - "Invalid assignment id" - Assignment IDs must be numbers
+- "Invalid quiz id" - Quiz IDs must be numbers
 
 ## Configuration
 

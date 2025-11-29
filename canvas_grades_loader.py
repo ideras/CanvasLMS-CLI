@@ -21,8 +21,9 @@ from markdown_converter import MarkdownToPDFConverter
 
 class CanvasGradesLoader:
     """
-    CanvasGradesLoader is responsible for loading grades from a CSV file into memory and applying data validations.
-    Validations include checking if the file exists and converting Markdown content to PDF format.
+    CanvasGradesLoader is responsible for loading grades from a CSV file into memory and applying
+    data validations. Validations include checking if the file exists and converting Markdown
+    content to PDF format.
     """
     def __init__(self, filepath: str, root_dir: Optional[str]):
         self.filepath = filepath
@@ -30,7 +31,7 @@ class CanvasGradesLoader:
         self.root_dir: str = root_dir if root_dir else str(Path(filepath).resolve().parent)
 
         self.valid_columns: Final[List[str]] = [
-            "canvas_id", "student_id", "grade", "comment", "comments", 
+            "canvas_id", "student_id", "grade", "comment", "comments",
             "md_exam_file1", "pdf_exam_file1", "md_exam_file2",
             "pdf_exam_file2", "md_eval_file", "pdf_eval_file"
         ]
@@ -51,11 +52,11 @@ class CanvasGradesLoader:
     @property
     def data_frame(self) -> pd.DataFrame | None:
         return self._data_frame
-    
+
     @property
     def md_file_columns(self) -> List[str]:
         return self._md_file_columns
-    
+
     @property
     def pdf_file_columns(self) -> List[str]:
         return self._pdf_file_columns

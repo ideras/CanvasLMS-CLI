@@ -92,9 +92,13 @@ Pro tip: Use TAB for auto-completion!
 
     show_subparsers.add_parser("assignments", help="Show assignments in current course")
     show_subparsers.add_parser("students", help="Show students in current course")
+    show_subparsers.add_parser("quizzes", help="Show quizzes in current course")
 
     sp_show_assignment = show_subparsers.add_parser("assignment", help="Show details for a specific assignment")
     sp_show_assignment.add_argument("assignment_id", help="Assignment ID to show details for")
+
+    sp_show_quiz = show_subparsers.add_parser("quiz", help="Show details for a specific quiz")
+    sp_show_quiz.add_argument("quiz_id", help="Quiz ID to show details for")
 
     @with_argparser(show_parser)
     def do_show(self, args: argparse.Namespace):
@@ -104,12 +108,20 @@ Pro tip: Use TAB for auto-completion!
             self.canvas_cli_cmd_hdlr.list_assignments();
         elif args.entity == "students":
             self.canvas_cli_cmd_hdlr.list_students();
+        elif args.entity == "quizzes":
+            self.canvas_cli_cmd_hdlr.list_quizzes();
         elif args.entity == "assignment":
             try:
                 assignment_id = int(args.assignment_id)
                 self.canvas_cli_cmd_hdlr.show_assignment_details(assignment_id)
             except Exception as e:
                 self.perror(f"Invalid assignment id {args.assignment_id}. It must be a number")
+        elif args.entity == "quiz":
+            try:
+                quiz_id = int(args.quiz_id)
+                self.canvas_cli_cmd_hdlr.show_quiz_details(quiz_id)
+            except Exception as e:
+                self.perror(f"Invalid quiz id {args.quiz_id}. It must be a number")
 
     # ---------------------------
     # download command with subcommands (nested)
@@ -129,6 +141,20 @@ Pro tip: Use TAB for auto-completion!
     sp_dl_assignment_grades.add_argument("assignment_id", help="Assignment ID")
     sp_dl_assignment_grades.add_argument("--file", "-f", required=False, help="Output CSV file (default name is based on the course and assignment name)")
 
+    # download quiz questions <quiz_id> --file FILE
+    sp_dl_quiz = dl_subparsers.add_parser("quiz", help="Download quiz-related data")
+    dl_quiz_sub = sp_dl_quiz.add_subparsers(dest="what", required=True)
+
+    sp_dl_quiz_questions = dl_quiz_sub.add_parser("questions", help="Download quiz questions as JSON or Markdown")
+    sp_dl_quiz_questions.add_argument("quiz_id", help="Quiz ID")
+    sp_dl_quiz_questions.add_argument("--file", "-f", required=False, help="Output file (default name is based on the quiz title)")
+    sp_dl_quiz_questions.add_argument("--markdown", "-m", action="store_true", help="Export as Markdown instead of JSON")
+
+    sp_dl_quiz_submissions = dl_quiz_sub.add_parser("submissions", help="Download quiz submissions as JSON or Markdown files")
+    sp_dl_quiz_submissions.add_argument("quiz_id", help="Quiz ID")
+    sp_dl_quiz_submissions.add_argument("--dir", "-d", required=False, help="Output directory (default: current directory)")
+    sp_dl_quiz_submissions.add_argument("--markdown", "-m", action="store_true", help="Export as Markdown instead of JSON")
+
     @with_argparser(download_parser)
     def do_download(self, args: argparse.Namespace):
         """Download students or assignment grades as CSV."""
@@ -141,6 +167,18 @@ Pro tip: Use TAB for auto-completion!
                 self.canvas_cli_cmd_hdlr.download_assignment_grades_csv(assignment_id, args.file)
             except Exception as e:
                 self.perror(f"Invalid assigment id {args.assignment_id}. It must be a number")
+        elif args.entity == "quiz" and args.what == "questions":
+            try:
+                quiz_id = int(args.quiz_id)
+                self.canvas_cli_cmd_hdlr.download_quiz_questions(quiz_id, args.file, args.markdown)
+            except Exception as e:
+                self.perror(f"Invalid quiz id {args.quiz_id}. It must be a number")
+        elif args.entity == "quiz" and args.what == "submissions":
+            try:
+                quiz_id = int(args.quiz_id)
+                self.canvas_cli_cmd_hdlr.download_quiz_submissions(quiz_id, args.file, args.markdown)
+            except Exception as e:
+                self.perror(f"Invalid quiz id {args.quiz_id}. It must be a number")
 
     # ---------------------------
     # upload command with subcommands (nested)

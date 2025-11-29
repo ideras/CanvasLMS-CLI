@@ -55,6 +55,32 @@ class CanvasClient:
             return students
         except Exception as e:
             raise RuntimeError(f"Failed to get students for course {course_id}: {e}") from e
+
+    def get_quizzes_for_course(self, course_id: int) -> List[Dict]:
+        """List quizzes in a course"""
+
+        try:
+            quizzes = self.canvas_re.make_request(f'/courses/{course_id}/quizzes?per_page=100')
+            return quizzes
+        except Exception as e:
+            raise RuntimeError(f"Failed to get quizzes for course {course_id}: {e}") from e
+
+    def get_quiz_questions(self, course_id: int, quiz_id: int) -> List[Dict]:
+        """Get questions for a specific quiz"""
+
+        try:
+            questions = self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/questions?per_page=100')
+            return questions
+        except Exception as e:
+            raise RuntimeError(f"Failed to get questions for quiz {quiz_id} in course {course_id}: {e}") from e
+
+    def get_quiz_submissions(self, course_id: int, quiz_id: int) -> Dict:
+        """Get submissions for a specific quiz"""
+
+        try:
+            return self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/submissions?per_page=100')
+        except Exception as e:
+            raise RuntimeError(f"Failed to get submissions for quiz {quiz_id} in course {course_id}: {e}") from e
     
     def ensure_course_folder(self, course_id: int, folder_path: str) -> Dict:
         """
