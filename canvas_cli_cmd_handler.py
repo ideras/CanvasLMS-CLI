@@ -3,7 +3,8 @@ import argparse
 import re
 import csv
 from typing import Optional, Dict
-from cmd2 import Cmd
+from cmd2 import Cmd, ansi
+from canvas_cli_ui import CLIStyler, TableFormatter
 from canvas_client import CanvasClient
 from canvas_grades_uploader import CanvasGradesUploader
 from config import CANVAS_CONFIG, APP_CONFIG
@@ -50,7 +51,8 @@ class CanvasCLICommandHandler:
                 return
 
             self.update_prompt()
-            self.cli.poutput(f"Selected course: {self.selected_course['name']}")
+            self.cli.success(f"Selected course: {self.selected_course['name']}")
+            self.cli.update_last_operation(f"Selected course {self.selected_course['name']}")
 
         except ValueError:
             self.cli.perror(f"Invalid course identifier: {course_id}")
@@ -96,24 +98,55 @@ class CanvasCLICommandHandler:
         total = len(courses)
         count = len(filtered)
 
-        hdr = "Available Courses"
+        # Update last operation
+        self.cli.update_last_operation(f"Listed {count} courses")
+
+        # Header
+        header_text = "📚 Available Courses"
         if name_rx or code_rx:
-            hdr += " (filtered)"
+            header_text += " (filtered)"
 
-        full_hdr = f"{hdr}: {count}/{total}"
-        self.cli.poutput(f"\n{full_hdr}\n" + "=" * len(full_hdr))
+        self.cli.poutput(CLIStyler.boxed_text_double(header_text))
+        self.cli.poutput("")
 
+        # Stats
+        filter_status = f" | Filtered: {total - count}" if (name_rx or code_rx) else ""
+        self.cli.poutput(f"   Total: {total} | Displaying: {count}{filter_status}")
+        self.cli.poutput("")
+
+        # Table header
+        header = f"{'ID':<10} {'Course Code':<20} {'Term':<20} {'Course Name':<40}"
+        self.cli.poutput(ansi.style(f"{header}", fg=ansi.Fg.WHITE, bold=True))
+        self.cli.poutput(ansi.style(f"{'─'*110}", fg=ansi.Fg.LIGHT_GRAY))
+
+        # Course rows
         for i, course in enumerate(filtered, 1):
-            is_current = self.selected_course and course.get("id") == self.selected_course.get("id")
+            course_id = str(course.get("id", "N/A"))
+            name = course.get("name", "N/A")
+            code = course.get('course_code', 'N/A')
+            term = course.get('term', {}).get('name', 'N/A')
 
-            status = " 📍 CURRENT" if is_current else ""
-            self.cli.poutput(f'{i:2d}. "{course.get("name")}" (ID: {course.get("id")}){status}')
+            # Truncate long fields
+            name = name[:37] + '...' if len(name) > 40 else name
+            code = code[:17] + '...' if len(code) > 20 else code
+            term = term[:17] + '...' if len(term) > 20 else term
+
+            # Selected course highlighting
+            is_current = self.selected_course and course.get("id") == self.selected_course.get("id")
+            if is_current:
+                row = f"{ansi.style('●', fg=ansi.Fg.GREEN)} {course_id:<8} {code:<20} {term:<20} {name:<40}"
+                self.cli.poutput(ansi.style(row, fg=ansi.Fg.GREEN))
+            else:
+                row = f"  {course_id:<8} {code:<20} {term:<20} {name:<40}"
+                self.cli.poutput(row)
 
         if not filtered:
-            self.cli.poutput("No courses matched your filter.")
-        else:
-            self.cli.poutput("\n💡 Use 'use course <canvas_id>' to select a course")
-            self.cli.poutput(f"    Examples: 'use course {filtered[0]['id']}'")
+            self.cli.poutput("\n   No courses matched your filter.")
+
+        self.cli.poutput("")
+        self.cli.info("💡 Use 'use course <canvas_id>' to select a course")
+        if filtered:
+            self.cli.poutput(f"    Example: 'use course {filtered[0]['id']}'")
 
     def list_folders(self, args: argparse.Namespace) -> None:
         """List folders for a specific course."""
