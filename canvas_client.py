@@ -1,7 +1,7 @@
 import os
 import requests
 import posixpath
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from canvas_request_executor import CanvasRequestExecutor
 from config import FILE_UPLOAD_CONFIG
 
@@ -34,8 +34,7 @@ class CanvasClient:
         """List assignments for a course"""
 
         try:
-            assignments = self.canvas_re.make_request(f'/courses/{course_id}/assignments?per_page=100&include[]=assignment_group')
-            return assignments
+            return self.canvas_re.make_paginated_request(f'/courses/{course_id}/assignments?per_page=100&include[]=assignment_group')
         except Exception as e:
             raise RuntimeError(f"Failed to get assignments for course {course_id}: {e}") from e
 
@@ -43,7 +42,7 @@ class CanvasClient:
         """Get submissions for a specific assignment"""
 
         try:
-            return self.canvas_re.make_request(f'/courses/{course_id}/assignments/{assignment_id}/submissions?include[]=user&per_page=100')
+            return self.canvas_re.make_paginated_request(f'/courses/{course_id}/assignments/{assignment_id}/submissions?include[]=user&per_page=100')
         except Exception as e:
             raise RuntimeError(f"Failed to get submissions for assignment {assignment_id} in course {course_id}: {e}") from e
 
@@ -51,17 +50,39 @@ class CanvasClient:
         """List students in a course"""
 
         try:
-            students = self.canvas_re.make_request(f'/courses/{course_id}/users?enrollment_type[]=student&per_page=300')
-            return students
+            return self.canvas_re.make_paginated_request(f'/courses/{course_id}/users?enrollment_type[]=student&per_page=100')
         except Exception as e:
             raise RuntimeError(f"Failed to get students for course {course_id}: {e}") from e
+
+    def get_enrollments_for_course(self, course_id: int) -> List[Dict]:
+        """Get all enrollments for a course with grades"""
+
+        try:
+            return self.canvas_re.make_paginated_request(f'/courses/{course_id}/enrollments?type[]=StudentEnrollment&per_page=100')
+        except Exception as e:
+            raise RuntimeError(f"Failed to get enrollments for course {course_id}: {e}") from e
 
     def get_quizzes_for_course(self, course_id: int) -> List[Dict]:
         """List quizzes in a course"""
 
         try:
+            quiz_list: List[Dict[str, Any]] = []
+
+            # Get quizzes using the old API
             quizzes = self.canvas_re.make_request(f'/courses/{course_id}/quizzes?per_page=100')
-            return quizzes
+            if isinstance(quizzes, list):
+                quiz_list.extend(quizzes)
+            else:
+                quiz_list.append(quizzes)
+
+            # Get quizzes using the new quiz API
+            new_quizzes = self.canvas_re.make_quiz_api_request(f'/courses/{course_id}/quizzes?per_page=100')
+            if isinstance(new_quizzes, list):
+                quiz_list.extend(new_quizzes)
+            else:
+                quiz_list.append(new_quizzes)
+
+            return quiz_list
         except Exception as e:
             raise RuntimeError(f"Failed to get quizzes for course {course_id}: {e}") from e
 

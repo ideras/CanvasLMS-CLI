@@ -185,6 +185,12 @@ AGENTS.md
 CLAUDE.md
 GEMINI.md
 
+# Virtual environment
+canvaslms-cli-env/
+
+# Assignment submission downloads
+assignment_*_submissions/
+
 # Generated sample files
 sample_*.md
 sample_*.pdf

@@ -79,9 +79,9 @@ class CanvasGradesLoader:
             if invalid:
                 raise ValueError(f"Invalid column(s) in CSV file: {', '.join(invalid)}")
 
-            self._data_frame = self._data_frame.dropna(subset=['student_id', 'grade'])
-            self._data_frame['student_id'] = self._data_frame['student_id'].astype(str).str.strip()
-            self._data_frame['grade'] = pd.to_numeric(self._data_frame['grade'], errors='coerce')
+            self._data_frame = self._data_frame.dropna(subset=['student_id', 'grade']).copy()
+            self._data_frame.loc[:, 'student_id'] = self._data_frame['student_id'].astype(str).str.strip()
+            self._data_frame.loc[:, 'grade'] = pd.to_numeric(self._data_frame['grade'], errors='coerce')
             self._data_frame = self._data_frame.dropna(subset=['grade'])
 
         except Exception as e:

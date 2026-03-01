@@ -21,13 +21,12 @@ import time
 from typing import Optional, List, Final
 from datetime import datetime
 from pathlib import Path
-from cmd2 import Cmd
 import pandas as pd
 from canvas_client import CanvasClient
 from canvas_grades_loader import CanvasGradesLoader
 
 class CanvasGradesUploader:
-    def __init__(self, cli: Cmd, canvas_client: CanvasClient, csv_filepath: str, root_dir: Optional[str]):
+    def __init__(self, cli, canvas_client: CanvasClient, csv_filepath: str, root_dir: Optional[str]):
         self.cli = cli
         self.canvas_client = canvas_client
         self.grades_loader = CanvasGradesLoader(csv_filepath, root_dir)

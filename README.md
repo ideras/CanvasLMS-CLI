@@ -75,7 +75,7 @@ CANVAS_CONFIG = {
 ### Starting the CLI
 
 ```bash
-python3 canvas_cli.py
+python3 canvas_cli_rich.py
 ```
 
 ### Basic Commands
@@ -190,11 +190,13 @@ Grade_Feedback/
 
 ```
 CanvasLMS-CLI/
-├── canvas_cli.py                 # Main CLI entry point
+├── canvas_cli_rich.py            # Main CLI entry point (Rich + prompt_toolkit)
+├── rich_ui.py                    # Rich-based UI components
 ├── canvas_cli_cmd_handler.py     # Command handlers
 ├── canvas_client.py              # Canvas API client
 ├── canvas_request_executor.py    # HTTP request handler
 ├── canvas_grades_uploader.py     # Grade upload logic
+├── canvas_grades_loader.py       # CSV grade loading and validation
 ├── markdown_converter.py         # Markdown to PDF conversion
 ├── config.py                     # Configuration settings
 └── csv_files/                    # Sample CSV files
@@ -220,7 +222,7 @@ uv run python markdown_converter.py
 uv run python -c "from canvas_client import CanvasClient; print('Client loaded')"
 
 # Run with uv
-uv run python canvas_cli.py
+uv run python canvas_cli_rich.py
 ```
 
 ## 🚨 Security Notes

@@ -59,13 +59,13 @@ CANVAS_CONFIG = {
 ### Launch the CLI
 
 ```bash
-python3 canvas_cli.py
+python3 canvas_cli_rich.py
 ```
 
 Or if using `uv`
 
 ```bash
-uv run canvas_cli.py
+uv run canvas_cli_rich.py
 ```
 
 ## Commands
@@ -356,6 +356,23 @@ download students --file my_students.csv
 ```
 
 ### Grade Management
+
+#### Download Course Grades
+
+```bash
+download course grades [--file FILE]
+```
+
+Download all student grades for the currently selected course as CSV. If no filename is provided, generates one based on the course name.
+
+**CSV format:** `canvas_id`, `name`, `sis_user_id`, `[Assignment Names...]`, `current_score`, `final_score`, `final_grade`
+
+**Examples:**
+
+```bash
+download course grades
+download course grades --file all_grades.csv
+```
 
 #### Download Assignment Grades
 

@@ -3,8 +3,8 @@ Canvas API Request Executor Module
 Handles Canvas API Requests
 """
 
+from typing import Optional, List, Dict, Any
 import requests
-from typing import Optional, Dict
 
 class CanvasRequestExecutor:
     def __init__(self, base_url: str, token: str):
@@ -17,9 +17,8 @@ class CanvasRequestExecutor:
             'Content-Type': 'application/json'
         })
 
-    def make_request(self, endpoint: str, method: str = 'GET', data: Optional[dict] = None) -> dict:
-        """Make a request to Canvas API"""
-        url = f"{self.base_url}/api/v1{endpoint}"
+    def _make_canvas_request(self, url: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | List[Dict[str, Any]]:
+        """Make a request to the Canvas API"""
 
         if method.upper() == 'GET':
             response = self.session.get(url)
@@ -45,3 +44,46 @@ class CanvasRequestExecutor:
                 raise
 
         return response.json() if response.content else {}
+
+    def make_quiz_api_request(self, endpoint: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | List[Dict[str, Any]]:
+        """Make a request to Canvas new quiz API"""
+        url = f"{self.base_url}/api/quiz/v1{endpoint}"
+
+        return self._make_canvas_request(url, method, data)
+
+    def make_request(self, endpoint: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | List[Dict[str, Any]]:
+        """Make a request to Canvas API"""
+        url = f"{self.base_url}/api/v1{endpoint}"
+        return self._make_canvas_request(url, method, data)
+
+    def make_paginated_request(self, endpoint: str) -> List[Dict[str, Any]]:
+        """Make a paginated request to Canvas API, yielding all results"""
+        url = f"{self.base_url}/api/v1{endpoint}"
+        results = []
+        
+        while url:
+            response = self.session.get(url)
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                if response.content:
+                    try:
+                        error_data = response.json()
+                        raise RuntimeError(f"Canvas API Error {response.status_code}: {error_data}") from e
+                    except:
+                        raise RuntimeError(f"Canvas API Error {response.status_code}: {response.text}") from e
+                else:
+                    raise
+
+            data = response.json()
+            if isinstance(data, list):
+                results.extend(data)
+            else:
+                return [data] # Should not happen for paginated endpoints, but safe fallback
+            
+            # Check for next link
+            url = None
+            if 'next' in response.links:
+                url = response.links['next']['url']
+                
+        return results
