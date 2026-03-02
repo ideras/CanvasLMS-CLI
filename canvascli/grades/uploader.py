@@ -22,8 +22,8 @@ from typing import Optional, List, Final
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
-from canvas_client import CanvasClient
-from canvas_grades_loader import CanvasGradesLoader
+from canvascli.api.client import CanvasClient
+from canvascli.grades.loader import CanvasGradesLoader
 
 class CanvasGradesUploader:
     def __init__(self, cli, canvas_client: CanvasClient, csv_filepath: str, root_dir: Optional[str]):

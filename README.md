@@ -68,14 +68,14 @@ CANVAS_CONFIG = {
 3. Scroll down to "Approved Integrations"
 4. Click "+ New Access Token"
 5. Enter a purpose/description
-6. Copy the generated token to your `config.py`
+6. Copy the generated token to your `canvascli/config.py`
 
 ## 🎯 Usage
 
 ### Starting the CLI
 
 ```bash
-python3 canvas_cli_rich.py
+python -m canvascli
 ```
 
 ### Basic Commands
@@ -190,16 +190,25 @@ Grade_Feedback/
 
 ```
 CanvasLMS-CLI/
-├── canvas_cli_rich.py            # Main CLI entry point (Rich + prompt_toolkit)
-├── rich_ui.py                    # Rich-based UI components
-├── canvas_cli_cmd_handler.py     # Command handlers
-├── canvas_client.py              # Canvas API client
-├── canvas_request_executor.py    # HTTP request handler
-├── canvas_grades_uploader.py     # Grade upload logic
-├── canvas_grades_loader.py       # CSV grade loading and validation
-├── markdown_converter.py         # Markdown to PDF conversion
-├── config.py                     # Configuration settings
-└── csv_files/                    # Sample CSV files
+├── canvascli/                        # Main package
+│   ├── __init__.py
+│   ├── __main__.py                   # python -m canvascli entry point
+│   ├── app.py                        # CLI application (Rich + prompt_toolkit)
+│   ├── config.py                     # Configuration settings
+│   ├── cli/                          # CLI layer
+│   │   ├── cmd_handler.py            # Command handlers
+│   │   └── ui.py                     # Rich-based UI components
+│   ├── api/                          # Canvas API communication
+│   │   ├── client.py                 # Canvas API client
+│   │   └── request_executor.py       # HTTP request handler
+│   ├── grades/                       # Grade processing
+│   │   ├── loader.py                 # CSV grade loading and validation
+│   │   └── uploader.py               # Grade upload logic
+│   └── converters/                   # File format converters
+│       └── markdown_converter.py     # Markdown to PDF conversion
+├── config.example.py                 # Configuration template
+├── csv_files/                        # Sample CSV files
+└── documentation/                    # Usage documentation
 ```
 
 ### Development Setup
@@ -219,10 +228,10 @@ cp config.example.py config.py  # Configure your Canvas settings
 uv run python markdown_converter.py
 
 # Test individual components  
-uv run python -c "from canvas_client import CanvasClient; print('Client loaded')"
+uv run python -c "from canvascli.api.client import CanvasClient; print('Client loaded')"
 
 # Run with uv
-uv run python canvas_cli_rich.py
+uv run python -m canvascli
 ```
 
 ## 🚨 Security Notes

@@ -18,7 +18,7 @@ from pathlib import Path
 import markdown
 from markdown.extensions import codehilite, toc, tables, fenced_code
 
-from config import MARKDOWN_CONFIG
+from canvascli.config import MARKDOWN_CONFIG
 
 
 class MarkdownToPDFConverter:

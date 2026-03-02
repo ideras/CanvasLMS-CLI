@@ -21,9 +21,9 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.completion import NestedCompleter, PathCompleter
 from prompt_toolkit.styles import Style
 
-from rich_ui import RichStyler, RichStatusBar
-from canvas_cli_cmd_handler import CanvasCLICommandHandler
-from config import CANVAS_CONFIG
+from canvascli.cli.ui import RichStyler, RichStatusBar
+from canvascli.cli.cmd_handler import CanvasCLICommandHandler
+from canvascli.config import CANVAS_CONFIG
 
 
 class REPLArgumentParser(argparse.ArgumentParser):
@@ -370,7 +370,7 @@ status_parser = REPLArgumentParser(prog="status", description="Show current CLI 
 @command("status", status_parser)
 def do_status(cli: CanvasCLIRich, args):
     """Display current status and context information."""
-    from rich_ui import RichTable
+    from canvascli.cli.ui import RichTable
 
     cli.console.print()
     cli.console.print(RichTable.format_header("Canvas LMS CLI - Current Status", width=70))

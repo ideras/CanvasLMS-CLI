@@ -179,6 +179,7 @@ Thumbs.db
 
 # Project-specific files
 config.py
+canvascli/config.py
 *.csv
 *.pdf
 AGENTS.md

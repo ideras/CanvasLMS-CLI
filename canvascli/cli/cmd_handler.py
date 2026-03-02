@@ -8,10 +8,10 @@ from typing import Dict, Optional
 
 from markdownify import markdownify
 
-from rich_ui import RichStyler
-from canvas_client import CanvasClient
-from canvas_grades_uploader import CanvasGradesUploader
-from config import APP_CONFIG, CANVAS_CONFIG
+from canvascli.cli.ui import RichStyler
+from canvascli.api.client import CanvasClient
+from canvascli.grades.uploader import CanvasGradesUploader
+from canvascli.config import APP_CONFIG, CANVAS_CONFIG
 
 
 class CanvasCLICommandHandler:
@@ -223,7 +223,7 @@ class CanvasCLICommandHandler:
                 return
 
             # Create a Rich table for assignments
-            from rich_ui import RichTable
+            from canvascli.cli.ui import RichTable
             from rich.console import Console
             from rich.text import Text
 
@@ -349,7 +349,7 @@ class CanvasCLICommandHandler:
                 self.cli.poutput("")
 
             # Create a Rich table for assignment details
-            from rich_ui import RichTable
+            from canvascli.cli.ui import RichTable
             from rich.text import Text
 
             table_data = []
@@ -452,7 +452,7 @@ class CanvasCLICommandHandler:
                 return
 
             # Create a Rich table for students
-            from rich_ui import RichTable
+            from canvascli.cli.ui import RichTable
             from rich.text import Text
 
             # Prepare table data
@@ -844,7 +844,7 @@ class CanvasCLICommandHandler:
                 return
 
             # Create a Rich table for quizzes
-            from rich_ui import RichTable
+            from canvascli.cli.ui import RichTable
             from rich.text import Text
 
             # Prepare table data
@@ -982,7 +982,7 @@ class CanvasCLICommandHandler:
                 self.cli.poutput("")
 
             # Create a Rich table for quiz details
-            from rich_ui import RichTable
+            from canvascli.cli.ui import RichTable
             from rich.text import Text
 
             table_data = []

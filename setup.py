@@ -46,7 +46,7 @@ setup(
     install_requires=read_requirements(),
     entry_points={
         'console_scripts': [
-            'canvas-cli=canvas_cli_rich:main',
+            'canvas-cli=canvascli.app:main',
         ],
     },
     keywords="canvas lms education cli grading students assignments",

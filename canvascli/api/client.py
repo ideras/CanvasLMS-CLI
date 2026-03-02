@@ -2,8 +2,8 @@ import os
 import requests
 import posixpath
 from typing import Optional, List, Dict, Any
-from canvas_request_executor import CanvasRequestExecutor
-from config import FILE_UPLOAD_CONFIG
+from canvascli.api.request_executor import CanvasRequestExecutor
+from canvascli.config import FILE_UPLOAD_CONFIG
 
 class CanvasClient:
     def __init__(self, base_url: Optional[str] = None, token: Optional[str] = None):

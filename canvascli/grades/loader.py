@@ -17,7 +17,7 @@ import os
 from typing import List, Final, Optional
 from pathlib import Path
 import pandas as pd
-from markdown_converter import MarkdownToPDFConverter
+from canvascli.converters.markdown_converter import MarkdownToPDFConverter
 
 class CanvasGradesLoader:
     """

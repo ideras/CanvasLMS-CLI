@@ -54,18 +54,18 @@ CANVAS_CONFIG = {
 3. Scroll down to "Approved Integrations"
 4. Click "+ New Access Token"
 5. Enter a purpose/description
-6. Copy the generated token to your `config.py`
+6. Copy the generated token to your `canvascli/config.py`
 
 ### Launch the CLI
 
 ```bash
-python3 canvas_cli_rich.py
+python -m canvascli
 ```
 
 Or if using `uv`
 
 ```bash
-uv run canvas_cli_rich.py
+uv run python -m canvascli
 ```
 
 ## Commands

@@ -16,3 +16,6 @@ dependencies = [
     "rich>=13.0.0",
     "weasyprint>=59.0",
 ]
+
+[project.scripts]
+canvas-cli = "canvascli.app:main"

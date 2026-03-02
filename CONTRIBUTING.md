@@ -33,14 +33,14 @@ Thank you for your interest in contributing to Canvas LMS CLI! This document pro
 
 ### Project Structure
 
-- `canvas_cli_rich.py`: Main CLI interface using Rich and prompt_toolkit
-- `rich_ui.py`: Rich-based UI components (styling, tables, progress bars)
-- `canvas_cli_cmd_handler.py`: Business logic for CLI commands
-- `canvas_client.py`: Canvas API wrapper
-- `canvas_request_executor.py`: HTTP request handling
-- `canvas_grades_uploader.py`: Grade upload logic
-- `canvas_grades_loader.py`: CSV grade loading and validation
-- `markdown_converter.py`: Markdown to PDF conversion
+- `canvascli/app.py`: Main CLI application using Rich and prompt_toolkit
+- `canvascli/cli/ui.py`: Rich-based UI components (styling, tables, progress bars)
+- `canvascli/cli/cmd_handler.py`: Business logic for CLI commands
+- `canvascli/api/client.py`: Canvas API wrapper
+- `canvascli/api/request_executor.py`: HTTP request handling
+- `canvascli/grades/uploader.py`: Grade upload logic
+- `canvascli/grades/loader.py`: CSV grade loading and validation
+- `canvascli/converters/markdown_converter.py`: Markdown to PDF conversion
 
 ### Adding New Features
 
@@ -50,8 +50,9 @@ Thank you for your interest in contributing to Canvas LMS CLI! This document pro
    ```
 
 2. Implement your feature following the existing patterns:
-   - Add CLI commands in `canvas_cli_rich.py`
-   - Implement logic in appropriate handler files
+   - Add CLI commands in `canvascli/app.py`
+   - Add command handlers in `canvascli/cli/cmd_handler.py`
+   - Implement logic in appropriate subpackage
    - Update configuration if needed
 
 3. Test your changes thoroughly
