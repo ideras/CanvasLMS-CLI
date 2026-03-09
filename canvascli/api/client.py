@@ -72,15 +72,18 @@ class CanvasClient:
             quizzes = self.canvas_re.make_request(f'/courses/{course_id}/quizzes?per_page=100')
             if isinstance(quizzes, list):
                 quiz_list.extend(quizzes)
-            else:
+            elif isinstance(quizzes, dict):
                 quiz_list.append(quizzes)
 
             # Get quizzes using the new quiz API
             new_quizzes = self.canvas_re.make_quiz_api_request(f'/courses/{course_id}/quizzes?per_page=100')
             if isinstance(new_quizzes, list):
                 quiz_list.extend(new_quizzes)
-            else:
-                quiz_list.append(new_quizzes)
+            elif isinstance(new_quizzes, dict):
+                if "quizzes" in new_quizzes:
+                    quiz_list.extend(new_quizzes["quizzes"])
+                else:
+                    quiz_list.append(new_quizzes)
 
             return quiz_list
         except Exception as e:
@@ -90,7 +93,29 @@ class CanvasClient:
         """Get questions for a specific quiz"""
 
         try:
-            questions = self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/questions?per_page=100')
+            questions: List[Dict[str, Any]] = []
+            
+            try:
+                old_questions = self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/questions?per_page=100')
+                if isinstance(old_questions, list):
+                    questions.extend(old_questions)
+                elif isinstance(old_questions, dict):
+                    questions.append(old_questions)
+            except Exception:
+                pass
+            
+            try:
+                new_questions = self.canvas_re.make_quiz_api_request(f'/courses/{course_id}/quizzes/{quiz_id}/questions?per_page=100')
+                if isinstance(new_questions, list):
+                    questions.extend(new_questions)
+                elif isinstance(new_questions, dict):
+                    if "questions" in new_questions:
+                        questions.extend(new_questions["questions"])
+                    else:
+                        questions.append(new_questions)
+            except Exception:
+                pass
+            
             return questions
         except Exception as e:
             raise RuntimeError(f"Failed to get questions for quiz {quiz_id} in course {course_id}: {e}") from e
@@ -99,7 +124,25 @@ class CanvasClient:
         """Get submissions for a specific quiz"""
 
         try:
-            return self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/submissions?per_page=100')
+            try:
+                result = self.canvas_re.make_request(f'/courses/{course_id}/quizzes/{quiz_id}/submissions?per_page=100')
+                return result if isinstance(result, dict) else {"quiz_submissions": [] if not isinstance(result, list) else result}
+            except Exception:
+                try:
+                    result = self.canvas_re.make_quiz_api_request(f'/courses/{course_id}/quizzes/{quiz_id}/submissions?per_page=100')
+                    if isinstance(result, dict):
+                        if "quiz_submissions" in result:
+                            return result
+                        elif "submissions" in result:
+                            return {"quiz_submissions": result["submissions"]}
+                        else:
+                            return {"quiz_submissions": []}
+                    elif isinstance(result, list):
+                        return {"quiz_submissions": result}
+                    else:
+                        return {"quiz_submissions": []}
+                except Exception:
+                    return {"quiz_submissions": []}
         except Exception as e:
             raise RuntimeError(f"Failed to get submissions for quiz {quiz_id} in course {course_id}: {e}") from e
 

@@ -827,6 +827,10 @@ class CanvasCLICommandHandler:
             course_id = course["id"]
             all_quizzes = self.canvas_client.get_quizzes_for_course(course_id)
 
+            all_assignments = self.canvas_client.get_assignments_for_course(course_id)
+            new_quizzes = [a for a in all_assignments if a.get("submission_types") and "external_tool" in a.get("submission_types", [])]
+            all_quizzes.extend(new_quizzes)
+
             assignment_groups = self.canvas_client.canvas_re.make_request(
                 f"/courses/{course_id}/assignment_groups"
             )
@@ -854,7 +858,7 @@ class CanvasCLICommandHandler:
                 quiz_id = str(quiz['id'])
 
                 # Title (truncate if too long)
-                title = quiz.get('title', 'Untitled Quiz')
+                title = quiz.get('title') or quiz.get('name', 'Untitled Quiz')
                 if len(title) > 35:
                     title = title[:32] + '...'
 
@@ -934,12 +938,25 @@ class CanvasCLICommandHandler:
             all_quizzes = self.canvas_client.get_quizzes_for_course(course_id)
 
             quiz = next((q for q in all_quizzes if q["id"] == quiz_id), None)
+            is_new_quiz = False
 
             if not quiz:
-                self.cli.perror(
-                    f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
-                )
-                return
+                all_assignments = self.canvas_client.get_assignments_for_course(course_id)
+                assignment = next((a for a in all_assignments if a["id"] == quiz_id), None)
+                
+                if assignment and assignment.get("submission_types") and "external_tool" in assignment.get("submission_types", []):
+                    quiz = assignment
+                    is_new_quiz = True
+                else:
+                    self.cli.perror(
+                        f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
+                    )
+                    return
+
+            # Normalize quiz/assignment fields
+            quiz_title = quiz.get("title") or quiz.get("name", "Untitled Quiz")
+            quiz_description = quiz.get("description")
+            quiz_points = quiz.get("points_possible", 0)
 
             assignment_groups = self.canvas_client.canvas_re.make_request(
                 f"/courses/{course_id}/assignment_groups"
@@ -949,19 +966,19 @@ class CanvasCLICommandHandler:
             # Main header with Rich formatting - include title, ID, and type in header
             self.cli.poutput("")
             self.cli.poutput(f"[bold cyan]{'═' * 80}[/bold cyan]")
-            self.cli.poutput(f"[bold white]📝 Quiz Details: {quiz['title']}[/bold white] [dim](ID: {quiz['id']}, Type: {quiz.get('quiz_type', 'N/A')})[/dim]")
+            quiz_type = "New Quiz (External Tool)" if is_new_quiz else quiz.get('quiz_type', 'N/A')
+            self.cli.poutput(f"[bold white]📝 Quiz Details: {quiz_title}[/bold white] [dim](ID: {quiz['id']}, Type: {quiz_type})[/dim]")
             self.cli.poutput(f"[bold cyan]{'═' * 80}[/bold cyan]")
             self.cli.poutput("")
 
             # Description section (convert HTML to Markdown)
-            description = quiz.get("description")
-            if description:
+            if quiz_description:
                 self.cli.poutput("[bold white]Description:[/bold white]")
                 try:
                     from rich.panel import Panel
                     from rich.markup import escape
                     # Convert HTML to Markdown
-                    desc_markdown = markdownify(description)
+                    desc_markdown = markdownify(quiz_description)
                     # Limit for display
                     if len(desc_markdown) > 1000:
                         desc_markdown = desc_markdown[:997] + "..."
@@ -978,7 +995,7 @@ class CanvasCLICommandHandler:
                     console.print(desc_panel)
                 except Exception as e:
                     # If conversion fails, show plain text
-                    self.cli.poutput(f"{description[:500]}")
+                    self.cli.poutput(f"{quiz_description[:500]}")
                 self.cli.poutput("")
 
             # Create a Rich table for quiz details
@@ -1093,7 +1110,7 @@ class CanvasCLICommandHandler:
             console.print(table)
 
             self.cli.poutput("")
-            self.cli.update_last_operation(f"Viewed quiz {quiz['title']}")
+            self.cli.update_last_operation(f"Viewed quiz {quiz_title}")
 
         except Exception as e:
             self.cli.perror(f"Failed to show quiz details: {e}")
@@ -1114,20 +1131,28 @@ class CanvasCLICommandHandler:
             quiz = next((q for q in all_quizzes if q["id"] == quiz_id), None)
 
             if not quiz:
-                self.cli.poutput(
-                    f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
-                )
-                return
+                all_assignments = self.canvas_client.get_assignments_for_course(course_id)
+                assignment = next((a for a in all_assignments if a["id"] == quiz_id), None)
+                
+                if assignment and assignment.get("submission_types") and "external_tool" in assignment.get("submission_types", []):
+                    quiz = assignment
+                else:
+                    self.cli.poutput(
+                        f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
+                    )
+                    return
 
             questions = self.canvas_client.get_quiz_questions(course_id, quiz_id)
 
+            quiz_title = quiz.get("title") or quiz.get("name", "Untitled Quiz")
+
             if not questions:
-                self.cli.poutput(f"No questions found for quiz '{quiz['title']}'")
+                self.cli.poutput(f"No questions found for quiz '{quiz_title}'")
                 return
 
             if not output_file:
                 safe_quiz_title = "".join(
-                    c for c in quiz["title"] if c.isalnum() or c in (" ", "-", "_")
+                    c for c in quiz_title if c.isalnum() or c in (" ", "-", "_")
                 ).strip()
                 ext = "md" if markdown else "json"
                 filename = f"quiz_{quiz_id}_{safe_quiz_title.replace(' ', '_')}_questions.{ext}"
@@ -1321,44 +1346,78 @@ class CanvasCLICommandHandler:
 
             all_quizzes = self.canvas_client.get_quizzes_for_course(course_id)
             quiz = next((q for q in all_quizzes if q["id"] == quiz_id), None)
+            is_new_quiz = False
 
-            if not quiz:
-                self.cli.poutput(
-                    f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
-                )
-                return
+            if quiz:
+                # Check if this quiz is actually a new quiz (assignment with external_tool)
+                if quiz.get("submission_types") and "external_tool" in quiz.get("submission_types", []):
+                    is_new_quiz = True
+            else:
+                all_assignments = self.canvas_client.get_assignments_for_course(course_id)
+                assignment = next((a for a in all_assignments if a["id"] == quiz_id), None)
+                
+                if assignment and assignment.get("submission_types") and "external_tool" in assignment.get("submission_types", []):
+                    quiz = assignment
+                    is_new_quiz = True
+                else:
+                    self.cli.poutput(
+                        f"Cannot find quiz with ID: {quiz_id} in course '{course['name']}'"
+                    )
+                    return
 
-            assignment_id = quiz.get("assignment_id")
-            if not assignment_id:
-                self.cli.poutput(
-                    f"Quiz '{quiz['title']}' has no associated assignment_id. Cannot retrieve submission answers."
-                )
-                return
+            # For new quizzes (which are assignments), use the quiz_id as assignment_id
+            # For traditional quizzes, use the assignment_id field
+            assignment_id = quiz_id if is_new_quiz else quiz.get("assignment_id")
+            
+            assignment_sub_map = {}
+            if assignment_id:
+                try:
+                    assignment_submissions = self.canvas_client.canvas_re.make_request(
+                        f"/courses/{course_id}/assignments/{assignment_id}/submissions?per_page=100&include[]=submission_history&include[]=user"
+                    )
+                    if isinstance(assignment_submissions, list):
+                        for sub in assignment_submissions:
+                            assignment_sub_map[sub["user_id"]] = sub
+                except Exception:
+                    self.cli.poutput("Warning: Could not retrieve assignment submission details for this quiz.")
+            else:
+                self.cli.poutput("Note: Quiz has no associated assignment_id. Submission answers may be limited.")
 
             submissions_data = self.canvas_client.get_quiz_submissions(
                 course_id, quiz_id
             )
             submissions = submissions_data.get("quiz_submissions", [])
 
+            quiz_title = quiz.get("title") or quiz.get("name", "Untitled Quiz")
+
+            # For new quizzes, if no quiz submissions found, use assignment submissions instead
+            if not submissions and is_new_quiz and assignment_sub_map:
+                submissions = [
+                    {
+                        "user_id": user_id,
+                        "id": sub.get("id"),
+                        "started_at": sub.get("submitted_at"),
+                        "finished_at": sub.get("graded_at"),
+                        "score": sub.get("score"),
+                        "quiz_id": quiz_id,
+                        "quiz_points_possible": quiz.get("points_possible", 0),
+                        "workflow_state": sub.get("workflow_state"),
+                        "html_url": sub.get("html_url"),
+                        "attempt": sub.get("attempt", 1),
+                    }
+                    for user_id, sub in assignment_sub_map.items()
+                ]
+
             if not submissions:
-                self.cli.poutput(f"No submissions found for quiz '{quiz['title']}'")
+                self.cli.poutput(f"No submissions found for quiz '{quiz_title}'")
                 return
 
             students = self.canvas_client.get_students_for_course(course_id)
             student_map = {s["id"]: s for s in students}
 
-            assignment_submissions = self.canvas_client.canvas_re.make_request(
-                f"/courses/{course_id}/assignments/{assignment_id}/submissions?per_page=100&include[]=submission_history&include[]=user"
-            )
-
-            assignment_sub_map = {}
-            if isinstance(assignment_submissions, list):
-                for sub in assignment_submissions:
-                    assignment_sub_map[sub["user_id"]] = sub
-
             if not output_dir:
                 safe_quiz_title = "".join(
-                    c for c in quiz["title"] if c.isalnum() or c in (" ", "-", "_")
+                    c for c in quiz_title if c.isalnum() or c in (" ", "-", "_")
                 ).strip()
                 output_dir = (
                     f"quiz_{quiz_id}_{safe_quiz_title.replace(' ', '_')}_submissions"
@@ -1374,7 +1433,7 @@ class CanvasCLICommandHandler:
                 )
 
                 if markdown:
-                    md_content = f"# Quiz Submission: {quiz.get('title', 'Quiz')}\n\n"
+                    md_content = f"# Quiz Submission: {quiz_title}\n\n"
 
                     md_content += "**Student Information**\n\n"
                     md_content += f"- **Name:** {student.get('name', 'Unknown')}\n"
@@ -1402,41 +1461,69 @@ class CanvasCLICommandHandler:
                     )
 
                     assignment_sub = assignment_sub_map.get(user_id)
-                    if (
-                        assignment_sub
-                        and "submission_history" in assignment_sub
-                        and assignment_sub["submission_history"]
-                    ):
-                        history = assignment_sub["submission_history"][0]
-                        if "submission_data" in history:
-                            answers = history["submission_data"]
-                            if answers:
-                                md_content += "## Student Answers\n\n"
+                    
+                    # Try to get answers from assignment submission
+                    answers_found = False
+                    if assignment_sub:
+                        # Check for traditional quiz submission_data
+                        if (
+                            "submission_history" in assignment_sub
+                            and assignment_sub["submission_history"]
+                        ):
+                            history = assignment_sub["submission_history"][0]
+                            if "submission_data" in history:
+                                answers = history["submission_data"]
+                                if answers:
+                                    answers_found = True
+                                    md_content += "## Student Answers\n\n"
 
-                                for ans in answers:
-                                    q_id = ans.get("question_id", "Unknown")
-                                    ans_text = ans.get("text", "")
-                                    points = ans.get("points", 0)
-                                    correct = ans.get("correct", "undefined")
+                                    for ans in answers:
+                                        q_id = ans.get("question_id", "Unknown")
+                                        ans_text = ans.get("text", "")
+                                        points = ans.get("points", 0)
+                                        correct = ans.get("correct", "undefined")
 
-                                    md_content += f"### Question ID: {q_id}\n\n"
-                                    md_content += f"**Points:** {points}  \n"
-                                    md_content += f"**Correct:** {correct}\n\n"
+                                        md_content += f"### Question ID: {q_id}\n\n"
+                                        md_content += f"**Points:** {points}  \n"
+                                        md_content += f"**Correct:** {correct}\n\n"
 
-                                    if ans_text:
-                                        md_content += "**Answer:**\n\n"
-                                        md_content += markdownify(
-                                            ans_text,
-                                            heading_style="ATX",
-                                            strip=["script", "style"],
-                                        )
-                                        md_content += "\n\n"
-                                    else:
-                                        md_content += (
-                                            "**Answer:** *(no answer provided)*\n\n"
-                                        )
+                                        if ans_text:
+                                            md_content += "**Answer:**\n\n"
+                                            md_content += markdownify(
+                                                ans_text,
+                                                heading_style="ATX",
+                                                strip=["script", "style"],
+                                            )
+                                            md_content += "\n\n"
+                                        else:
+                                            md_content += (
+                                                "**Answer:** *(no answer provided)*\n\n"
+                                            )
 
-                                    md_content += "---\n\n"
+                                        md_content += "---\n\n"
+                        
+                        # For new quizzes, show available submission data
+                        if not answers_found and is_new_quiz:
+                            md_content += "## Submission Information\n\n"
+                            md_content += "*Note: This is a New Quiz (external tool). Detailed answer data may not be available through the Canvas API.*\n\n"
+                            
+                            # Show submission body if available
+                            if assignment_sub.get("body"):
+                                md_content += "**Submission Body:**\n\n"
+                                md_content += markdownify(
+                                    assignment_sub["body"],
+                                    heading_style="ATX",
+                                    strip=["script", "style"],
+                                )
+                                md_content += "\n\n"
+                            
+                            # Show preview URL if available
+                            if assignment_sub.get("preview_url"):
+                                md_content += f"**Preview URL:** {assignment_sub['preview_url']}\n\n"
+                            
+                            # Show external tool URL if available
+                            if assignment_sub.get("url"):
+                                md_content += f"**Submission URL:** {assignment_sub['url']}\n\n"
 
                     safe_student_name = "".join(
                         c
@@ -1469,14 +1556,29 @@ class CanvasCLICommandHandler:
                     }
 
                     assignment_sub = assignment_sub_map.get(user_id)
-                    if (
-                        assignment_sub
-                        and "submission_history" in assignment_sub
-                        and assignment_sub["submission_history"]
-                    ):
-                        history = assignment_sub["submission_history"][0]
-                        if "submission_data" in history:
-                            enriched_submission["answers"] = history["submission_data"]
+                    if assignment_sub:
+                        # Try to get traditional quiz submission data
+                        if (
+                            "submission_history" in assignment_sub
+                            and assignment_sub["submission_history"]
+                        ):
+                            history = assignment_sub["submission_history"][0]
+                            if "submission_data" in history:
+                                enriched_submission["answers"] = history["submission_data"]
+                        
+                        # For new quizzes, include additional assignment submission details
+                        if is_new_quiz:
+                            enriched_submission["is_new_quiz"] = True
+                            enriched_submission["submission_type"] = assignment_sub.get("submission_type")
+                            enriched_submission["body"] = assignment_sub.get("body")
+                            enriched_submission["url"] = assignment_sub.get("url")
+                            enriched_submission["preview_url"] = assignment_sub.get("preview_url")
+                            enriched_submission["grade"] = assignment_sub.get("grade")
+                            enriched_submission["graded_at"] = assignment_sub.get("graded_at")
+                            enriched_submission["grader_id"] = assignment_sub.get("grader_id")
+                            enriched_submission["late"] = assignment_sub.get("late")
+                            enriched_submission["missing"] = assignment_sub.get("missing")
+                            enriched_submission["excused"] = assignment_sub.get("excused")
 
                     safe_student_name = "".join(
                         c
@@ -1496,6 +1598,14 @@ class CanvasCLICommandHandler:
             self.cli.poutput(
                 f"Downloaded {count} submissions to directory: {output_dir}"
             )
+            
+            # Add informative note for new quizzes
+            if is_new_quiz:
+                self.cli.poutput("")
+                self.cli.poutput("[yellow]ℹ️  Note: This is a New Quiz (external tool/LTI).[/yellow]")
+                self.cli.poutput("[yellow]   Detailed question-level answer data is not available through the Canvas API.[/yellow]")
+                self.cli.poutput("[yellow]   You can see submission scores, timing, and status information.[/yellow]")
+                self.cli.poutput("[yellow]   For detailed answers, please use Canvas SpeedGrader or the quiz tool directly.[/yellow]")
 
         except Exception as e:
             self.cli.poutput(f"Failed to download quiz submissions: {e}")
